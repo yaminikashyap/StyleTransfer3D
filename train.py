@@ -38,8 +38,23 @@ def train():
     mmse_loss = nn.MSELoss()
 
     #Defining optimizers
-    optimizer_D_A = torch.optim.Adam(DnetA.parameters(), lr=0.0001)
-    optimizer_D_B = torch.optim.Adam(DnetB.parameters(), lr=0.0001)
+
+    #content encoder
+    optimizer_ce0 = torch.optim.Adam(model.content_encoder_0.parameters(), lr=0.0001)
+    optimizer_ce1 = torch.optim.Adam(model.content_encoder_1.parameters(), lr=0.0001)
+
+    #style encoder
+    optimizer_se = torch.optim.Adam(model.style_encoder.parameters(), lr=0.0001)
+    #generatore
+    optimizer_gen00 = torch.optim.Adam( list(model.encoder_0.parameters()) + list(model.decoder_0.parameters()) , lr=0.0001)
+    optimizer_gen01 = torch.optim.Adam( list(model.encoder_0.parameters()) + list(model.decoder_1.parameters()) , lr=0.0001)
+    optimizer_gen10 = torch.optim.Adam( list(model.encoder_1.parameters()) + list(model.decoder_0.parameters()) , lr=0.0001)
+    optimizer_gen11 = torch.optim.Adam( list(model.encoder_1.parameters()) + list(model.decoder_1.parameters()) , lr=0.0001)
+
+    #discriminator
+    optimizer_disc0 = torch.optim.Adam(model.discriminator_0.parameters(), lr=0.0001)
+    optimizer_disc1 = torch.optim.Adam(model.discriminator_1.parameters(), lr=0.0001)
+
 
     for _, (data_a, data_b) in enumerate(zip(dataloader_train[classes[0]], dataloader_train[classes[1]])):
 
@@ -58,23 +73,38 @@ def train():
 
 
         #Latent loss
-        CE0_reconstruction_loss = l1_distance(outputs["content_encoder_prime"][0], outputs["content_encoder_outputs"][0])
-        CE1_reconstruction_loss = l1_distance(outputs["content_encoder_prime"][1], outputs["content_encoder_outputs"][1])
-        Style_reconstruction_loss = l1_distance(outputs["style_encoder_prime"][0], outputs["style_encoder_reconstructed_outputs"][1]) + \
+        optimizer_ce0.zero_grad(); optimizer_ce1.zero_grad(); optimizer_se.zero_grad()
+        loss_CE0_reconstruction = l1_distance(outputs["content_encoder_prime"][0], outputs["content_encoder_outputs"][0])
+        loss_CE0_reconstruction.backward(retain_graph=True)
+        loss_CE1_reconstruction = l1_distance(outputs["content_encoder_prime"][1], outputs["content_encoder_outputs"][1])
+        loss_CE1_reconstruction.backward(retain_graph=True)
+        loss_Style_reconstruction = l1_distance(outputs["style_encoder_prime"][0], outputs["style_encoder_reconstructed_outputs"][1]) + \
             l1_distance(outputs["style_encoder_prime"][1], outputs["style_encoder_reconstructed_outputs"][0]) 
-
+        loss_Style_reconstruction.backward(retain_graph=True)
+        optimizer_ce0.step(); optimizer_ce1.step(); optimizer_se.step()
         # TO DO : Split into 2 for 2 gens
         
-        loss_gen0 = (mmse_loss(outputs["discriminator_outputs"][0],valid) + mmse_loss(outputs["discriminator_outputs"][3],valid))*0.33 + \
-        (mmse_loss(outputs["discriminator_outputs"][4],fake))*0.66
-        loss_gen1 = (mmse_loss(outputs["discriminator_outputs"][1],valid) + mmse_loss(outputs["discriminator_outputs"][2],valid))*0.33 + \
-        (mmse_loss(outputs["discriminator_outputs"][5],fake))*0.66
+        optimizer_gen00.zero_grad(); optimizer_gen01.zero_grad(); optimizer_gen10.zero_grad(); optimizer_gen11.zero_grad()
+        loss_gen00 = (mmse_loss(outputs["discriminator_outputs"][0],valid))*1
+        loss_gen00.backward(retain_graph=True)
+        loss_gen01 = (mmse_loss(outputs["discriminator_outputs"][1],valid))*0.5 
+        loss_gen01.backward(retain_graph=True)
+        loss_gen10 = (mmse_loss(outputs["discriminator_outputs"][2],valid))*0.5 
+        loss_gen10.backward(retain_graph=True)
+        loss_gen11 = (mmse_loss(outputs["discriminator_outputs"][3],valid))*0.5 
+        loss_gen11.backward(retain_graph=True)
+        optimizer_gen00.step(); optimizer_gen01.step(); optimizer_gen10.step(); optimizer_gen11.step()
 
-        loss_disc= (adversarial_loss(outputs["discriminator_outputs"][0],fake) + adversarial_loss(outputs["discriminator_outputs"][1],fake) +
-        adversarial_loss(outputs["discriminator_outputs"][2],fake) + adversarial_loss(outputs["discriminator_outputs"][3],fake))*0.33 + \
-        (adversarial_loss(outputs["discriminator_outputs"][4],valid) + adversarial_loss(outputs["discriminator_outputs"][5],valid))*0.66
-        loss_disc.backward(retain_graph=True)
-        # exit()
+        optimizer_disc0.zero_grad(); optimizer_disc1.zero_grad()
+        loss_disc0 = (adversarial_loss(outputs["discriminator_outputs"][0],fake) + adversarial_loss(outputs["discriminator_outputs"][2],fake))*0.33 + \
+        (adversarial_loss(outputs["discriminator_outputs"][4],valid))*0.66 
+        loss_disc1 = (adversarial_loss(outputs["discriminator_outputs"][1],fake) + adversarial_loss(outputs["discriminator_outputs"][3],fake))*0.33 + \
+        (adversarial_loss(outputs["discriminator_outputs"][5],valid))*0.66 
+        loss_disc0.backward(retain_graph=True)
+        loss_disc1.backward(retain_graph=True)
+        optimizer_disc0.step(); optimizer_disc1.step()
+
+        exit()
 
 if __name__ == "main":
     
