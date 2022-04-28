@@ -145,4 +145,4 @@ class ThreeDsnet(nn.Module):
         "style_encoder_primes":[style_0_prime, style_1_prime],
         "style_encoder_reconstructed_outputs":[style_01, style_10],
         "cycle_reconstructed_outputs":[cycle_out_010, cycle_out_101],
-        "discriminator_outputs":[class_00, class_01, class_11, class_10, class_0, class_1]}
+        "discriminator_outputs":[class_00, class_01, class_10, class_11, class_0, class_1]}
