@@ -1,5 +1,7 @@
 from model import ThreeDsnet
 import torch
+import random
+import numpy as np
 import torch.nn as nn
 from torch.autograd import Variable
 from torch import Tensor
@@ -11,7 +13,7 @@ opt = {"data_dir":"/mnt/nfs/scratch1/nikhilagarwa/3dsnet/dataset/data/","normali
 dataset_class = dataset_shapenet.ShapeNet
 dataset_train = { classes[0]: dataset_class(EasyDict(opt), 'chair', classes[0], train=True),
         classes[1]: dataset_class(EasyDict(opt), 'chair', classes[1], train=True) }
-
+device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
 dataloader_train = {}
 dataloader_train[classes[0]] = torch.utils.data.DataLoader(
                 dataset_train[classes[0]],
@@ -26,6 +28,26 @@ dataloader_train[classes[1]] = torch.utils.data.DataLoader(
 
 def l1_distance(inputs, targets):
     return torch.mean(torch.abs(inputs - targets))
+
+def chamfer_dist(reconstructed_points, target_points):
+    print("Chamfer loss")
+    reconstructed_points = torch.transpose(reconstructed_points, 1, 2)
+    chamfer_loss = 0
+    number_points = 0
+    i = 0
+    for batch_idx in range(reconstructed_points.shape[0]):
+        batch_points = int(target_points.shape[1]*0.05)
+        number_points += batch_points
+        indices = np.arange(target_points.shape[1]).tolist()
+        sampled_points = random.sample(indices, batch_points)
+        for point in target_points[batch_idx][sampled_points]:
+            diff = torch.square(reconstructed_points[batch_idx].to(device) - point)
+            diff = torch.sum(diff, dim = 1)
+            diff = torch.min(diff)
+            chamfer_loss += diff
+            i+=1
+    reconstructed_points = torch.transpose(reconstructed_points, 1, 2)
+    return torch.div(chamfer_loss, number_points)
 
 def train():
     print("Trying to train")
@@ -52,17 +74,19 @@ def train():
     optimizer_gen01 = torch.optim.Adam( list(model.content_encoder_0.parameters()) + list(model.decoder_1.parameters()) , lr=0.0001)
     optimizer_gen10 = torch.optim.Adam( list(model.content_encoder_1.parameters()) + list(model.decoder_0.parameters()) , lr=0.0001)
     optimizer_gen11 = torch.optim.Adam( list(model.content_encoder_1.parameters()) + list(model.decoder_1.parameters()) , lr=0.0001)
+    
 
     #discriminator
     optimizer_disc0 = torch.optim.Adam(model.discriminator_0.parameters(), lr=0.0001)
     optimizer_disc1 = torch.optim.Adam(model.discriminator_1.parameters(), lr=0.0001)
 
-    print(dataloader_train[classes[0]])
-    print(dataloader_train[classes[1]])
+    #print(dataloader_train)
+    #print(dataloader_train[classes[1]])
     for _, (data_a, data_b) in enumerate(zip(dataloader_train[classes[0]], dataloader_train[classes[1]])):
 
         print("Here at iteration")
         data_a = data_a['points']
+        print(data_a.shape)
         # data_a = data_a.view(data_a.shape[0]*data_a.shape[1],3)
         data_a = data_a.transpose(2,1)
 
@@ -71,7 +95,7 @@ def train():
         data_b = data_b.transpose(2,1)
 
         outputs = model(data_a.to(device),data_b.to(device))
-        print(outputs)
+        #print(outputs)
 
         valid = Variable(Tensor(4, 1).fill_(1.0), requires_grad=False).to(device)
         fake = Variable(Tensor(4, 1).fill_(0.0), requires_grad=False).to(device)
@@ -107,11 +131,18 @@ def train():
         loss_disc0.backward(retain_graph=True)
         loss_disc1.backward(retain_graph=True)
 
+        reconstructed_00 = outputs["reconstructed_outputs"][0]
+        reconstructed_11 = outputs["reconstructed_outputs"][1]
+        chamfer_loss_00 = chamfer_dist(data_a, reconstructed_00)
+        chamfer_loss_11 = chamfer_dist(data_b, reconstructed_11)
+        chamfer_loss_00.backward(retain_graph=True)
+        chamfer_loss_11.backward(retain_graph=True)
+
 	#Weight updates
         optimizer_ce0.step(); optimizer_ce1.step(); optimizer_se.step()
         optimizer_gen00.step(); optimizer_gen01.step(); optimizer_gen10.step(); optimizer_gen11.step()        
         optimizer_disc0.step(); optimizer_disc1.step()
-        print("Loss gen_00", loss_gen00)
+        #print("Loss gen_00", loss_gen00)
         exit()
 
 if __name__ == "__main__":
