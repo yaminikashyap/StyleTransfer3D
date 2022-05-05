@@ -41,6 +41,7 @@ class ShapeNet(data.Dataset):
             # Define core path array
             self.dataset_path = os.path.join(opt.data_dir, 'ShapeNet')
             self.pointcloud_path = os.path.join(self.dataset_path, 'ShapeNetV1PointCloud')
+            #print(self.pointcloud_path)
             self.image_path = os.path.join(self.dataset_path, 'ShapeNetV1Renderings')
 
             # Create Cache path
@@ -66,22 +67,25 @@ class ShapeNet(data.Dataset):
                 #     os.system("./dataset/download_shapenet_pointclouds.sh")
 
                 # Load classes
-                print(self.pointcloud_path)
+                #print(self.pointcloud_path)
                 self.classes = [x for x in next(os.walk(self.pointcloud_path))[1]]
+                #print("Classes found:", self.classes)
+                #print("Taxonomy path:", self.taxonomy_path)
                 with open(self.taxonomy_path, 'r') as f:
                     self.taxonomy = json.load(f)
-
+                #print("Taxonomy", self.taxonomy)
                 self.id2names = {}
                 self.id2children = {}
                 self.names2id = {}
                 for dict_class in self.taxonomy:
+                    #print(dict_class['synsetId'], "synset Id at :")
                     if dict_class['synsetId'] in self.classes:
                         # name = dict_class['name'].split(sep=',')[0]
                         name = dict_class['name']
                         self.id2children[dict_class['synsetId']] = dict_class['children']
                         self.id2names[dict_class['synsetId']] = name
                         self.names2id[name] = dict_class['synsetId']
-
+                #print(self.names2id)
                 self.category_id = self.names2id[category]
                 self.childrenid2names = {}
                 self.names2childrenid = {}
@@ -91,7 +95,7 @@ class ShapeNet(data.Dataset):
                         name = dict_class['name']
                         self.childrenid2names[dict_class['synsetId']] = name
                         self.names2childrenid[name] = dict_class['synsetId']
-
+#                print(self.names2childrenid)
                 # Select class
                 self.subcategory_id = self.names2childrenid[subcategory]
 
@@ -111,7 +115,7 @@ class ShapeNet(data.Dataset):
                                 dict_class['subSynsetId'] in self.subcategory_id):
                             pointcloud = dict_class['modelId'] + '.points.ply.npy'
                             list_pointcloud.append(pointcloud)
-
+                
                 if self.train:
                     list_pointcloud = list_pointcloud[:int(len(list_pointcloud) * 0.8)]
                 else:
@@ -131,6 +135,7 @@ class ShapeNet(data.Dataset):
                     for pointcloud in list_pointcloud:
                         pointcloud_path = os.path.join(dir_pointcloud, pointcloud)
                         image_path = os.path.join(dir_image, pointcloud.split(".")[0], "rendering")
+                        #print(image_path)
                         if not self.SVR or exists(image_path):
                             self.datapath.append((pointcloud_path, image_path, pointcloud, self.subcategory))
                         else:
@@ -155,6 +160,8 @@ class ShapeNet(data.Dataset):
             # Concatenate all processed files
             self.data_points = [data[0] for data in self.datas]
             # TODO(msegu): consider adding option to randomly select num_samples if we want to train with less samples
+            #print("Data 0 dims:", self.data_points[0].shape)
+            #print("Data 1 dims:", self.data_points[1].shape)
             self.data_points = torch.cat(self.data_points, 0)
 
             self.data_metadata = [{'pointcloud_path': data[1], 'image_path': data[2], 'name': data[3],
@@ -200,17 +207,20 @@ class ShapeNet(data.Dataset):
         pointcloud_path, image_path, pointcloud, subcategory = self.datapath[index]
         points = self.load(pointcloud_path)['points'][0]
         points[:, :3] = self.normalization_function(points[:, :3])
+        #print("Get item normalization ", points.shape)
         return points.unsqueeze(0), pointcloud_path, image_path, pointcloud, subcategory
 
     def __getitem__(self, index):
         return_dict = deepcopy(self.data_metadata[index])
         # Point processing
         points = self.data_points[index]
+        #print("Before sampling", points.shape)
         points = points.clone()
         if self.opt.sample:
             choice = np.random.choice(points.size(0), self.num_sample, replace=True)
             points = points[choice, :]
         points = points[:, :3].contiguous()
+        #print("After sampling", points.shape)
         return_dict = {'points': points,
                        'pointcloud_path': return_dict['pointcloud_path'],
                        'image_path': return_dict['image_path'],
@@ -242,6 +252,7 @@ class ShapeNet(data.Dataset):
             return str(N)
 
     def load(self, path):
+        #path = "/mnt/nfs/scratch1/nikhilagarwa/3dsnet/docs/2526b1f358f773034203f59b4fda924b.obj"
         ext = path.split('.')[-1]
         if ext == 'npy' or ext == 'ply' or ext == 'obj':
             return self.load_point_input(path)
@@ -252,14 +263,18 @@ class ShapeNet(data.Dataset):
         ext = path.split('.')[-1]
         if ext == 'npy':
             points = np.load(path)
+            #print("The path is : ", path)
+            #print("Points shape loaded, ", points.shape)
         elif ext == 'ply' or ext == 'obj':
             import pymesh
             points = pymesh.load_mesh(path).vertices
+            #print("Points shape loaded from obj, ", points.shape)
         else:
             print('invalid file extension')
 
         points = torch.from_numpy(points.copy()).float()
         operation = pointcloud_processor.Normalization(points, keep_track=True)
+        #print("Points shape before unit ball normalization, ", points.shape)
         if self.opt.normalization == 'UnitBall':
             operation.normalize_unitL2ball()
         elif self.opt.normalization == 'BoundingBox':
@@ -271,6 +286,7 @@ class ShapeNet(data.Dataset):
             'operation': operation,
             'path': path,
         }
+        #print("Points shape after unit ball normalization, ", points.shape)
         return return_dict
 
     def load_image(self, path):
