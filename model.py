@@ -3,10 +3,6 @@ import torch.nn as nn
 from torch.nn import Sequential as Seq, Linear as Lin, LeakyReLU, GroupNorm
 from styleatlasnet import StyleAtlasnet
 
-# the "MLP" block that you will use the in the PointNet and CorrNet modules you will implement
-# This block is made of a linear transformation (FC layer), 
-# followed by a Leaky RelU, a Group Normalization (optional, depending on enable_group_norm)
-# the Group Normalization (see Wu and He, "Group Normalization", ECCV 2018) creates groups of 32 channels
 def MLP(channels, enable_group_norm=True):
     if enable_group_norm:
         num_groups = [0]
@@ -22,23 +18,6 @@ def MLP(channels, enable_group_norm=True):
                      for i in range(1, len(channels))])
 
 
-# class PointNet(torch.nn.Module):
-#     def __init__(self, num_input_features, num_output_features):
-#         super(PointNet, self).__init__()
-#         self.mlp1 = MLP([num_input_features, 32, 64, 128])
-#         self.mlp2 = MLP([128, 128])
-#         self.mlp3 = MLP([256, 128, 64])
-#         self.fc1 = torch.nn.Linear(64, num_output_features, bias=True)
-
-#     def forward(self, x):
-#         f_i = self.mlp1(x)
-#         h_i = self.mlp2(f_i)
-#         pool = torch.max(h_i, 0)
-#         g = pool.values.repeat((int)(x.shape[0]), 1)
-#         concat = torch.cat((g, f_i), 1)
-#         t = self.mlp3(concat)
-#         y_i = self.fc1(t)
-#         return y_i
 class PointNet(nn.Module):
     def __init__(self, nlatent=1024, dim_input=3, normalization='bn', activation='relu'):
         """
