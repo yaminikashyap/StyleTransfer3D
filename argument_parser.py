@@ -19,6 +19,7 @@ def parser():
     parser.add_argument('--nepoch', type=int)
     parser.add_argument('--generator_lrate', type=float)
     parser.add_argument('--discriminator_lrate', type=float)
+    parser.add_argument('--best_results_dir', type=str)
 
     opt = parser.parse_args()
     

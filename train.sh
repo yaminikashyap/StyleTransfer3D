@@ -1,4 +1,6 @@
-DATA_DIR="/mnt/nfs/scratch1/nikhilagarwa/3dsnet/dataset/data/"
+DATA_DIR="/gypsum/scratch1/nikhilagarwa/3dsnet/dataset/data"
+#DATA_DIR="/mnt/nfs/scratch1/nikhilagarwa/3dsnet/dataset/data/"
+RESULTS_DIR="/gypsum/scratch1/nikhilagarwa/3dsnet/dataset/data/best_results/chair"
 GENERATOR_NORM="bn"
 DISCRIMINATOR_NORM="bn"
 NUM_LAYERS=2
@@ -9,16 +11,16 @@ W_PERCEPTUAL=0.0
 W_CONTENT_REC=0.1
 W_STYLE_REC=0.1
 NUMBER_POINTS=2500
-BATCH_SIZE=16
+BATCH_SIZE=4
 GEN_LR=0.001
 DIS_LR=0.004
 NEPOCH=180
 
 python train.py \
 --data_dir=$DATA_DIR \
---family="chair" \
---class_0="armchair"\
---class_1="straight chair,side chair"\
+--family "chair" \
+--class_0 "armchair" \
+--class_1 "straight chair,side chair" \
 --batch_size=$BATCH_SIZE \
 --weight_chamfer=$W_CHAMFER \
 --weight_cycle_chamfer=$W_CYCLE_CHAMFER \
@@ -29,3 +31,4 @@ python train.py \
 --nepoch=$NEPOCH \
 --generator_lrate=$GEN_LR \
 --discriminator_lrate=$DIS_LR \
+--best_results=$RESULTS_DIR \

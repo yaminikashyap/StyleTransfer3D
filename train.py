@@ -8,6 +8,8 @@ from torch import Tensor
 from easydict import EasyDict
 import dataset_shapenet as dataset_shapenet
 from argument_parser import parser
+#from losses import {l1_distance, chamfer_dist, adversarial_loss, mse_loss}
+best_loss = float('inf')
 
 def prepare_data(dataset_class, family, classes, data_dir, batch_size):
     data_options = {
@@ -44,7 +46,7 @@ def prepare_data(dataset_class, family, classes, data_dir, batch_size):
                     dataset_eval[classes[0]],
                     shuffle=False,
                 )
-    dataloader_train[classes[1]] = torch.utils.data.DataLoader(
+    dataloader_eval[classes[1]] = torch.utils.data.DataLoader(
                     dataset_train[classes[1]],
                     shuffle=False,
                 )
@@ -57,52 +59,61 @@ def prepare_model():
     model = ThreeDsnet()
     return model
 
-def calculate_losses(output, loss_params, data_0, data_1, batch_size):
+def calculate_losses(batch_losses, outputs, loss_params, data_0, data_1, batch_size, train=True):
     adversarial_loss = nn.BCELoss()
     mse_loss = nn.MSELoss()
-    reconstruction_loss = self.l1_distance
-    chamfer_loss = self.chamfer_dist
+    reconstruction_loss = l1_distance
+    chamfer_loss = chamfer_dist
     
+    print(loss_params)
+
     #Content Encoder losses
-    loss_CE0_reconstruction = loss_params.weight_content_reconstruction * reconstruction_loss(outputs["content_encoder_prime"][0], outputs["content_encoder_outputs"][0])
+    loss_CE0_reconstruction = loss_params["weight_content_reconstruction"] * reconstruction_loss(outputs["content_encoder_prime"][0], outputs["content_encoder_outputs"][0])
     
-    loss_CE1_reconstruction = loss_params.weight_content_reconstruction * reconstruction_loss(outputs["content_encoder_prime"][1], outputs["content_encoder_outputs"][1])
+    loss_CE1_reconstruction = loss_params["weight_content_reconstruction"] * reconstruction_loss(outputs["content_encoder_prime"][1], outputs["content_encoder_outputs"][1])
     
-    batch_losses["content_reconstruction"].append(loss_CE0_reconstruction + loss_CE1_reconstruction)
+    if train:
+        batch_losses["content_reconstruction"].append(loss_CE0_reconstruction + loss_CE1_reconstruction)
 
     #Style Encoder losses
-    loss_style_reconstruction = loss_params.weight_style_reconstruction * (reconstruction_loss(outputs["style_encoder_primes"][0], outputs["style_encoder_reconstructed_outputs"][1]) + reconstruction_loss(outputs["style_encoder_primes"][1], outputs["style_encoder_reconstructed_outputs"][0]))
-        
-    batch_losses["style_reconstruction"].append(loss_style_reconstruction)
+    loss_style_reconstruction = loss_params["weight_style_reconstruction"] * (reconstruction_loss(outputs["style_encoder_primes"][0], outputs["style_encoder_reconstructed_outputs"][1]) + reconstruction_loss(outputs["style_encoder_primes"][1], outputs["style_encoder_reconstructed_outputs"][0]))
+    
+    if train:
+        batch_losses["style_reconstruction"].append(loss_style_reconstruction)
 
     #Adversarial losses
     valid = Variable(Tensor(batch_size, 1).fill_(1.0), requires_grad=False).to(device)
     fake = Variable(Tensor(batch_size, 1).fill_(0.0), requires_grad=False).to(device)
     
-    loss_gen00 = loss_params.weight_adversarial*mse_loss(outputs["discriminator_outputs"][0],valid)
-    loss_gen01 = loss_params.weight_adversarial*mse_loss(outputs["discriminator_outputs"][1],valid)
-    loss_gen10 = loss_params.weight_adversarial*mse_loss(outputs["discriminator_outputs"][2],valid)
-    loss_gen11 = loss_params.weight_adversarial*mse_loss(outputs["discriminator_outputs"][3],valid)
+    loss_gen00 = loss_params["weight_adversarial"]*mse_loss(outputs["discriminator_outputs"][0],valid)
+    loss_gen01 = loss_params["weight_adversarial"]*mse_loss(outputs["discriminator_outputs"][1],valid)
+    loss_gen10 = loss_params["weight_adversarial"]*mse_loss(outputs["discriminator_outputs"][2],valid)
+    loss_gen11 = loss_params["weight_adversarial"]*mse_loss(outputs["discriminator_outputs"][3],valid)
     
-    batch_losses["generator"].append(loss_gen00 + loss_gen01 + loss_gen10 + loss_gen11)
+    if train:
+        batch_losses["generator"].append(loss_gen00 + loss_gen01 + loss_gen10 + loss_gen11)
     
-    loss_disc0 = loss_params.weight_adversarial * (adversarial_loss(outputs["discriminator_outputs"][0],fake) + adversarial_loss(outputs["discriminator_outputs"][2],fake) + adversarial_loss(outputs["discriminator_outputs"][4],valid))
+    loss_disc0 = loss_params["weight_adversarial"] * (adversarial_loss(outputs["discriminator_outputs"][0],fake) + adversarial_loss(outputs["discriminator_outputs"][2],fake) + adversarial_loss(outputs["discriminator_outputs"][4],valid))
     
-    loss_disc1 = loss_params.weight_adversarial * (adversarial_loss(outputs["discriminator_outputs"][1],fake) + adversarial_loss(outputs["discriminator_outputs"][3],fake) + adversarial_loss(outputs["discriminator_outputs"][5],valid))
+    loss_disc1 = loss_params["weight_adversarial"] * (adversarial_loss(outputs["discriminator_outputs"][1],fake) + adversarial_loss(outputs["discriminator_outputs"][3],fake) + adversarial_loss(outputs["discriminator_outputs"][5],valid))
     
-    batch_losses["discriminator"].append(loss_disc0 + loss_disc1)
+    if train:
+        batch_losses["discriminator"].append(loss_disc0 + loss_disc1)
 
     #Chamfer loss - Identity
-    chamfer_loss_00 = loss_params.weight_chamfer*chamfer_loss(data_a, outputs["reconstructed_outputs"][0])
-    chamfer_loss_11 = loss_params.weight_chamfer*chamfer_loss(data_b, outputs["reconstructed_outputs"][1])
+    print("Output shape: ", outputs["reconstructed_outputs"][0].shape)
+    chamfer_loss_00 = loss_params["weight_chamfer"]*chamfer_loss(data_0, outputs["reconstructed_outputs"][0])
+    chamfer_loss_11 = loss_params["weight_chamfer"]*chamfer_loss(data_1, outputs["reconstructed_outputs"][1])
     
-    batch_losses["chamfer"].append(chamfer_loss_00 + chamfer_loss_11)
+    if train:
+        batch_losses["chamfer"].append(chamfer_loss_00 + chamfer_loss_11)
     
     #Chamfer loss - Cycle
-    chamfer_loss_010 = loss_params.weight_cycle_chamfer*chamfer_loss(data_a, outputs["cycle_reconstructed_outputs"][0])
-    chamfer_loss_101 = loss_params.weight_cycle_chamfer*chamfer_loss(data_b, outputs["cycle_reconstructed_outputs"][1])
+    chamfer_loss_010 = loss_params["weight_cycle_chamfer"]*chamfer_loss(data_0, outputs["cycle_reconstructed_outputs"][0]["points_3"].view(batch_size, -1, 3))
+    chamfer_loss_101 = loss_params["weight_cycle_chamfer"]*chamfer_loss(data_1, outputs["cycle_reconstructed_outputs"][1]["points_3"].view(batch_size, -1, 3))
     
-    batch_losses["chamfer"].append(chamfer_loss_010 + chamfer_loss_101)
+    if train:
+        batch_losses["chamfer"].append(chamfer_loss_010 + chamfer_loss_101)
     
     return [loss_CE0_reconstruction + loss_CE1_reconstruction, loss_style_reconstruction, loss_gen00 + loss_gen01 + loss_gen10 + loss_gen11, loss_disc0 + loss_disc1, chamfer_loss_00 + chamfer_loss_11, chamfer_loss_010 + chamfer_loss_101]
     
@@ -152,7 +163,7 @@ def chamfer_dist(reconstructed_points, target_points):
     reconstructed_points = torch.transpose(reconstructed_points, 1, 2)
     return torch.div(chamfer_loss, number_points)
 
-def train_epoch(dataloader_train, model, optimizers, device, loss_params, batch_size):
+def train_epoch(dataloader_train, model, optimizers, device, loss_params, batch_size, classes):
     batch_losses = {
         "content_reconstruction": [],
         "style_reconstruction": [],
@@ -167,17 +178,18 @@ def train_epoch(dataloader_train, model, optimizers, device, loss_params, batch_
         data_a = data_a['points'].transpose(2,1)
         data_b = data_b['points'].transpose(2,1)
 
+        print(data_a.shape)
+        print(data_b.shape)
         if data_a.shape[0] != batch_size or data_b.shape[0] != batch_size:
             continue
-
         outputs = model(data_a.to(device), data_b.to(device))
-        optimizer_zero_grad()
-        losses = calculate_losses(batch_losses, outputs)
-        optimizer_step()
+        optimizer_zero_grad(optimizers)
+        losses = calculate_losses(batch_losses, outputs, loss_params, data_a, data_b, batch_size, True)
+        optimizer_step(optimizers)
 
     return batch_losses
 
-def evaluate_model(model, dataloader_eval):
+def evaluate_model(model, best_results_dir, dataloader_eval, epoch, classes):
     model.eval()
     
     for _, (data_a, data_b) in enumerate(zip(dataloader_eval[classes[0]], dataloader_eval[classes[1]])):
@@ -189,30 +201,34 @@ def evaluate_model(model, dataloader_eval):
             continue
 
         outputs = model(data_a.to(device), data_b.to(device))
-        losses = calculate_losses(outputs)
+        losses = calculate_losses(batch_losses, outputs, loss_params, data_a, data_b, batch_size, False)
+        print("Mean evaluation loss: " + str(losses.mean()))
         if losses.mean() < best_loss:
             best_loss = losses.mean()
-            torch.save(model, "model"+str(epoch)+".pt")
+            print("Found best at epoch: " + str(epoch))
+            torch.save(model, best_results_dir+"model"+str(epoch)+".pt")
 
-def train(model, dataloaders, optimizers, device, nepoch, loss_params, batch_size):
+def train(model, dataloaders, optimizers, device, nepoch, loss_params, batch_size, best_results_dir, classes):
 
     model = model.to(device)
     model.train()
 
-    for epoch in range(0, nepochs):
+    dataloader_train = dataloaders["train"]
+    dataloader_eval = dataloaders["eval"]
+    for epoch in range(0, nepoch):
         
-        batch_losses = train_epoch(dataloader_train, model, optimizers, device, loss_params, batch_size)
+        batch_losses = train_epoch(dataloader_train, model, optimizers, device, loss_params, batch_size, classes)
 
-        print("Epoch " + str(epoch))
-        print("\tContent loss: " + str(batch_losses["content_reconstruction"].mean()))
-        print("\tStyle loss: " + str(batch_losses["style_reconstruction"].mean()))
-        print("\tGenerator loss: " + str(batch_losses["generator"].mean()))
-        print("\tDiscriminator loss: " + str(batch_losses["discriminator"].mean()))
-        print("\tChamfer loss: " + str(batch_losses["chamfer"].mean()))
-        print("\tChamfer cycle loss: " + str(batch_losses["chamfer_cycle"].mean()))
+        print("Training Epoch " + str(epoch))
+        print("\tContent loss: " + str(torch.mean(torch.stack(batch_losses["content_reconstruction"]))))
+        print("\tStyle loss: " + str(torch.mean(torch.stack(batch_losses["style_reconstruction"].mean()))))
+        print("\tGenerator loss: " + str(torch.mean(torch.stack(batch_losses["generator"].mean()))))
+        print("\tDiscriminator loss: " + str(torch.mean(torch.stack(batch_losses["discriminator"].mean()))))
+        print("\tChamfer loss: " + str(torch.mean(torch.stack(batch_losses["chamfer"].mean()))))
+        print("\tChamfer cycle loss: " + str(torch.mean(torch.stack(batch_losses["chamfer_cycle"].mean()))))
         print()
          
-    evaluate_model(model, dataloader_eval)
+        evaluate_model(model=model, best_results_dir=best_results_dir, epoch=epoch, dataloader_eval=dataloader_eval, classes=classes)
 
 if __name__ == "__main__":
     
@@ -224,14 +240,18 @@ if __name__ == "__main__":
     
     optimizers = prepare_optimizers(model, opt.generator_lrate, opt.discriminator_lrate)
     
+    print(opt)
+
     loss_params = {
-        weight_chamfer : opt.weight_chamfer,
-        weight_cycle_chamfer : opt.weight_cycle_chamfer,
-        weight_adversarial : opt.weight_adversarial,
-        weight_perceptual : opt.weight_perceptual,
-        weight_content_reconstruction : opt.weight_content_reconstruction,
-        weight_style_reconstruction : opt.weight_style_reconstruction
+        "weight_chamfer" : opt.weight_chamfer,
+        "weight_cycle_chamfer" : opt.weight_cycle_chamfer,
+        "weight_adversarial" : opt.weight_adversarial,
+        "weight_perceptual" : opt.weight_perceptual,
+        "weight_content_reconstruction" : opt.weight_content_reconstruction,
+        "weight_style_reconstruction" : opt.weight_style_reconstruction
     }
     
     device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
-    train(model=model, dataloaders=dataloaders, optimizers=optimizers, device=device, nepoch=opt.nepoch, loss_params=loss_params, batch_size=batch_size)
+    print("Found device: ", device)
+
+    train(model=model, dataloaders=dataloaders, optimizers=optimizers, device=device, nepoch=opt.nepoch, loss_params=loss_params, batch_size=opt.batch_size, best_results_dir=opt.best_results_dir, classes=[opt.class_0, opt.class_1])
