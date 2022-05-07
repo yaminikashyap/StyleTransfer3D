@@ -19,7 +19,7 @@ def MLP(channels, enable_group_norm=True):
 
 
 class PointNet(nn.Module):
-    def __init__(self, nlatent=1024, dim_input=3, normalization='bn', activation='relu'):
+    def __init__(self, nlatent=1024, dim_input=3, normalization='bn', activation='lrelu'):
         """
         PointNet Encoder
         See : PointNet: Deep Learning on Point Sets for 3D Classification and Segmentation
@@ -28,31 +28,20 @@ class PointNet(nn.Module):
 
         super(PointNet, self).__init__()
         self.dim_input = dim_input
-        if normalization == 'sn':
-            self.conv1 = SpectralNorm(torch.nn.Conv1d(dim_input, 64, 1))
-            self.conv2 = SpectralNorm(torch.nn.Conv1d(64, 128, 1))
-            self.conv3 = SpectralNorm(torch.nn.Conv1d(128, nlatent, 1))
-            self.lin1 = SpectralNorm(nn.Linear(nlatent, nlatent))
-            self.lin2 = SpectralNorm(nn.Linear(nlatent, nlatent))
-        else:
-            self.conv1 = torch.nn.Conv1d(dim_input, 64, 1)
-            self.conv2 = torch.nn.Conv1d(64, 128, 1)
-            self.conv3 = torch.nn.Conv1d(128, nlatent, 1)
-            self.lin1 = nn.Linear(nlatent, nlatent)
-            self.lin2 = nn.Linear(nlatent, nlatent)
+        self.conv1 = torch.nn.Conv1d(dim_input, 64, 1)
+        self.conv2 = torch.nn.Conv1d(64, 128, 1)
+        self.conv3 = torch.nn.Conv1d(128, nlatent, 1)
+        self.lin1 = Lin(nlatent, nlatent)
+        self.lin2 = Lin(nlatent, nlatent)
 
-        norm = torch.nn.BatchNorm1d if normalization == 'bn' else nn.Identity
+        norm = torch.nn.BatchNorm1d
         self.bn1 = norm(64)
         self.bn2 = norm(128)
         self.bn3 = norm(nlatent)
         self.bn4 = norm(nlatent)
         self.bn5 = norm(nlatent)
 
-        # initialize activation
-        if activation == 'relu':
-            self.activation = nn.ReLU(inplace=True)
-        elif activation == 'lrelu':
-            self.activation = nn.LeakyReLU(0.2, inplace=True)
+        self.activation = nn.LeakyReLU(0.2, inplace=True)
 
         self.nlatent = nlatent
 
@@ -70,15 +59,18 @@ class ThreeDsnet(nn.Module):
     def __init__(self):
         super(ThreeDsnet, self).__init__()
 
-        self.content_encoder_0 = self.content_encoder_1 = PointNet(1024)
-        
+        self.content_encoder_0 = PointNet(1024)
+        self.content_encoder_1 = PointNet(1024)
+
         self.style_encoder = PointNet(512)
 
-        self.decoder_0 = self.decoder_1 = StyleAtlasnet(2500,25)
+        self.decoder_0 = StyleAtlasnet(2500,25)
+        self.decoder_1 = StyleAtlasnet(2500,25)
 
         self.discriminator_encoder= PointNet(1024)
-        self.discriminator_0 = nn.Sequential(self.discriminator_encoder, MLP([1024,1]))
-        self.discriminator_1 = nn.Sequential(self.discriminator_encoder, MLP([1024,1]))
+
+        self.discriminator_0 = Seq(self.discriminator_encoder, MLP([1024,1]))
+        self.discriminator_1 = Seq(self.discriminator_encoder, MLP([1024,1]))
     
 
     def forward(self, data0, data1, train=True):
