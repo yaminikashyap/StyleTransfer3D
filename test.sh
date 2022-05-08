@@ -16,7 +16,7 @@ GEN_LR=0.001
 DIS_LR=0.004
 NEPOCH=180
 
-srun --partition=2080ti-long --gres=gpu:1 python test.py \
+python test.py \
 --data_dir=$DATA_DIR \
 --family "chair" \
 --class_0 "armchair" \
