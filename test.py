@@ -13,7 +13,7 @@ from argument_parser import parser
 best_loss = float('inf')
 
 def reload_model(device):
-    model = torch.load("../model172.pt", map_location=torch.device(device))
+    model = torch.load("./model85.pt", map_location=torch.device(device))
     # model = ThreeDsnet()
     return model
     
