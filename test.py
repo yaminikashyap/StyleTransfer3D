@@ -13,7 +13,7 @@ from argument_parser import parser
 best_loss = float('inf')
 
 def reload_model(device):
-    model = torch.load("./model85.pt", map_location=torch.device(device))
+    model = torch.load("../model172.pt", map_location=torch.device(device))
     # model = ThreeDsnet()
     return model
     
@@ -34,26 +34,23 @@ def test_model(model, best_results_dir, classes, batch_size):
     
     with torch.no_grad(): 
         
-        data0 = np.load("bed0.points.ply.npy")    
-        data0 = torch.tensor(data0).unsqueeze(0)
-        data0 = data0.float()
+        data = np.load("bed0.points.ply.npy")    
+        data_0 = torch.tensor(data).unsqueeze(0)     
         
-        
-        
-        data1 = np.load("bed1.points.ply.npy")    
-        data1 = torch.tensor(data1).unsqueeze(0)
-        data1 = data1.float()
-        print(data1.shape)
-        
+        data = np.load("bed1.points.ply.npy")    
+        data_1 = torch.tensor(data).unsqueeze(0)
+
+
         normalization_function = pointcloud_processor.Normalization.normalize_bounding_box_functional
         data_0[:, :3] = normalization_function(data_0[:, :3])
         data_1[:, :3] = normalization_function(data_1[:, :3])
-        
-        data_0 = data.transpose(2,1).to(device)
-        data_1 = data.transpose(2,1).to(device)
-        
-        print(data1.shape)
 
+        data_0 = data_0.float()
+        data_0 = data_0.transpose(2,1).to(device)
+        data_1 = data_1.float()
+        data_1 = data_1.transpose(2,1).to(device)
+
+        
         outputs = model(data_0, data_1, train=False)
 
         out_00 = outputs["00"]
