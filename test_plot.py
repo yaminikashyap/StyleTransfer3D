@@ -2,7 +2,10 @@
 
 import numpy as np
 import pyvista as pv
-points = (np.load("jui.npy")[0])
+import sys
+
+path = sys.argv[1]
+points = (np.load( path + ".npy")[0])
 point_cloud = pv.PolyData(points)
 
 # np.allclose(points, point_cloud.points)
