@@ -49,7 +49,7 @@ def test_model(model, best_results_dir, classes, batch_size):
         data_0[:, :3] = normalization_function(data_0[:, :3])
         data_1[:, :3] = normalization_function(data_1[:, :3])
 
-        outputs = model(data_0, data_1, train=False).detach().cpu().numpy()
+        outputs = model(data_0, data_1, train=False)
 
         out_00 = outputs["00"]
         out_11 = outputs["11"]
