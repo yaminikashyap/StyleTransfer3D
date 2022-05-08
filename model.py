@@ -129,9 +129,23 @@ class ThreeDsnet(nn.Module):
             "discriminator_outputs":[class_00, class_01, class_10, class_11, class_0, class_1]}
         
         else:
+
             content_0 = self.content_encoder_0(data0)
-            style_1 = self.style_encoder(data1)
-            out_01 = (self.decoder_1(content_0, style_1, train=train)['points_3']).transpose(2,3).contiguous()
+            content_1 = self.content_encoder_1(data1)
+
+            style_0_prime = self.style_encoder(data0)
+            style_1_prime = self.style_encoder(data1)
+
+            # Decode latent codes (within domain)
+            out_00 = (self.decoder_0(content_0, style_0_prime, train=train)['points_3']).transpose(2, 3).contiguous()
+            out_00 = out_00.view(out_00.size(0), -1, 3)
+            out_11 = (self.decoder_0(content_1, style_1_prime, train=train)['points_3']).transpose(2, 3).contiguous()
+            out_11 = out_11.view(out_11.size(0), -1, 3)
+            # Decode latent codes (cross domain)
+            out_01 = (self.decoder_0(content_0, style_1_prime, train=train)['points_3']).transpose(2, 3).contiguous()
             out_01 = out_01.view(out_01.size(0), -1, 3)
-            return out_01
+            out_10 = (self.decoder_0(content_1, style_0_prime, train=train)['points_3']).transpose(2, 3).contiguous()
+            out_10 = out_10.view(out_10.size(0), -1, 3)
+
+            return {'00' : out_00, '11' : out_11, '01' : out_01, '10' : out_10}
             
