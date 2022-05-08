@@ -10,13 +10,13 @@ W_ADVERSARIAL=1.0
 W_PERCEPTUAL=0.0
 W_CONTENT_REC=0.1
 W_STYLE_REC=0.1
-NUMBER_POINTS=2500
+NUMBER_POINTS=30000
 BATCH_SIZE=1
 GEN_LR=0.001
 DIS_LR=0.004
 NEPOCH=180
 
-python test.py \
+srun --partition=2080ti-long --gres=gpu:1 python test.py \
 --data_dir=$DATA_DIR \
 --family "chair" \
 --class_0 "armchair" \
