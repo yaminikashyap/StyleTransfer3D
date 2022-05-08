@@ -37,6 +37,11 @@ def test_model(model, best_results_dir, classes, batch_size):
         data = torch.tensor(data).unsqueeze(0)
         data = data.float()
         data_0 = data.transpose(2,1).to(device)
+        
+        
+        data = np.load("bed1.points.ply.npy")    
+        data = torch.tensor(data).unsqueeze(0)
+        data = data.float()
         data_1 = data.transpose(2,1).to(device)
 
 
