@@ -11,8 +11,8 @@ import dataset_shapenet as dataset_shapenet
 from argument_parser import parser
 best_loss = float('inf')
 
-def reload_model():
-    model = torch.load("../model85.pt")
+def reload_model(device):
+    model = torch.load("./model85.pt", map_location=torch.device(device))
     # model = ThreeDsnet()
     return model
     
@@ -56,7 +56,7 @@ if __name__ == "__main__":
     opt = parser()
     device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
     
-    model = reload_model()
+    model = reload_model(device)
     loss_params = {
         "weight_chamfer" : opt.weight_chamfer,
         "weight_cycle_chamfer" : opt.weight_cycle_chamfer,
