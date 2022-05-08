@@ -33,7 +33,7 @@ def test_model(model, best_results_dir, classes, batch_size):
     
     with torch.no_grad(): 
         
-        data = np.load("/mnt/nfs/work1/mccallum/jbshah/3dsnet/dataset/data/ShapeNet/ShapeNetV1PointCloud/02828884/131edf0948b60ee6372c8cd7d07d8ddc.points.ply.npy")    
+        data = np.load("bed0.points.ply.npy")    
         data = torch.tensor(data).unsqueeze(0)
         data = data.float()
         data_0 = data.transpose(2,1).to(device)
