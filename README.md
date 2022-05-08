@@ -9,4 +9,7 @@ all.csv  cache  ShapeNetV1PointCloud  taxonomy.json
 
 
 Chair trained model: https://drive.google.com/file/d/17lhhr1YPnco5-UTYGL-Oq4yQx9JgSSgG/view?usp=sharing
-Bed trained model: https://drive.google.com/file/d/1SKfhWof492GESqik7a3BR2bwff4cuyeP/view?usp=sharing
+
+Bed trained model: https://drive.google.com/file/d/1SKfhWof492GESqik7a3BR2bwff4cuyeP/view?usp=sharing : 85th epoch
+
+https://drive.google.com/file/d/1Aa3IQzqucNs23lAGYX4d0Ty74m3v6TbC/view?usp=sharing : 179th epoch
