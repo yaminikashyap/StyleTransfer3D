@@ -41,7 +41,7 @@ def test_model(model, best_results_dir, classes, batch_size):
 
 
         output = model(data_0, data_1, train=False).detach().cpu().numpy()
-        np.save("/mnt/nfs/work1/mccallum/jbshah/674_Pro/jui.npy", output)
+        np.save("./output.npy", output)
 
     return 
 
