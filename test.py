@@ -8,6 +8,7 @@ from torch import Tensor
 from easydict import EasyDict
 import numpy as np
 import dataset_shapenet as dataset_shapenet
+import pointcloud_processor as pointcloud_processor
 from argument_parser import parser
 best_loss = float('inf')
 
@@ -44,8 +45,11 @@ def test_model(model, best_results_dir, classes, batch_size):
         data = data.float()
         data_1 = data.transpose(2,1).to(device)
 
+        normalization_function = pointcloud_processor.Normalization.normalize_bounding_box_functional
+        data_0[:, :3] = normalization_function(data_0[:, :3])
+        data_1[:, :3] = normalization_function(data_1[:, :3])
 
-        outputs = model(data_0, data_1, train=False)
+        outputs = model(data_0, data_1, train=False).detach().cpu().numpy()
 
         out_00 = outputs["00"]
         out_11 = outputs["11"]
