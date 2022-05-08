@@ -45,8 +45,17 @@ def test_model(model, best_results_dir, classes, batch_size):
         data_1 = data.transpose(2,1).to(device)
 
 
-        output = model(data_0, data_1, train=False).detach().cpu().numpy()
-        np.save("./output.npy", output)
+        outputs = model(data_0, data_1, train=False).detach().cpu().numpy()
+
+        out_00 = outputs["00"]
+        out_11 = outputs["11"]
+        out_01 = outputs["01"]
+        out_10 = outputs["10"]
+
+        np.save("./output00.npy", out_00)
+        np.save("./output11.npy", out_11)
+        np.save("./output01.npy", out_01)
+        np.save("./output10.npy", out_10)
 
     return 
 
