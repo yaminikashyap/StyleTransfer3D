@@ -131,7 +131,7 @@ class ThreeDsnet(nn.Module):
         else:
             content_0 = self.content_encoder_0(data0)
             style_1 = self.style_encoder(data1)
-            out_01 = self.decoder_1(content_0, style_1, train=train)['points_3']).transpose(2,3).contiguous()
+            out_01 = (self.decoder_1(content_0, style_1, train=train)['points_3']).transpose(2,3).contiguous()
             out_01 = out_01.view(out_01.size(0), -1, 3)
             return out_01
             
