@@ -45,7 +45,7 @@ def test_model(model, best_results_dir, classes, batch_size):
         data_1 = data.transpose(2,1).to(device)
 
 
-        outputs = model(data_0, data_1, train=False).detach().cpu().numpy()
+        outputs = model(data_0, data_1, train=False)
 
         out_00 = outputs["00"]
         out_11 = outputs["11"]
