@@ -34,10 +34,10 @@ def test_model(model, best_results_dir, classes, batch_size):
     
     with torch.no_grad(): 
         
-        data = np.load("bed0.points.ply.npy")    
+        data = np.load("bed1.points.ply.npy")    
         data_0 = torch.tensor(data).unsqueeze(0)     
         
-        data = np.load("bed1.points.ply.npy")    
+        data = np.load("bed0.points.ply.npy")    
         data_1 = torch.tensor(data).unsqueeze(0)
 
 
