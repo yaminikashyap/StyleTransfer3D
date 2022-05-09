@@ -14,4 +14,6 @@ Bed trained model: https://drive.google.com/file/d/1SKfhWof492GESqik7a3BR2bwff4c
 
 https://drive.google.com/file/d/1Aa3IQzqucNs23lAGYX4d0Ty74m3v6TbC/view?usp=sharing : 179th epoch
 
-Bottle model: https://drive.google.com/file/d/1MEeypKKg1IDQ3HbTN62EgQgDYlnBz-SJ/view?usp=sharing
+Bottle model with common style encoder: https://drive.google.com/file/d/1MEeypKKg1IDQ3HbTN62EgQgDYlnBz-SJ/view?usp=sharing
+
+Bottle model with separated style encoder: https://drive.google.com/file/d/120NKPW3j1QiVZQ83mCm-CQ17Cmj6Ess-/view?usp=sharing
