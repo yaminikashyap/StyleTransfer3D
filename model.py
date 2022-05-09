@@ -70,10 +70,11 @@ class ThreeDsnet(nn.Module):
     def __init__(self):
         super(ThreeDsnet, self).__init__()
 
-        self.content_encoder_0 = self.content_encoder_1 = PointNet(1024)
+        self.content_encoder_0 = PointNet(1024)
+        self.content_encoder_1 = PointNet(1024)
         
-        self.style_encoder_0 = PointNet(nlatent = 512, batch_size = batch_size)
-        self.style_encoder_1 = PointNet(nlatent = 512, batch_size = batch_size)
+        self.style_encoder_0 = PointNet(512)
+        self.style_encoder_1 = PointNet(512)
 
         self.decoder_0 = self.decoder_1 = StyleAtlasnet(2500,25)
 
@@ -125,7 +126,7 @@ class ThreeDsnet(nn.Module):
             "content_encoder_outputs":[content_01, content_10],
             "content_encoder_prime":[content_0, content_1],
             "style_encoder_primes":[style_0_prime, style_1_prime],
-            "style_encoder_reconstructed_outputs":[style_01, style_10],
+            "style_encoder_reconstructed_outputs":[style_10, style_01],
             "cycle_reconstructed_outputs":[cycle_out_010, cycle_out_101],
             "discriminator_outputs":[class_00, class_01, class_10, class_11, class_0, class_1]}
         
@@ -134,19 +135,18 @@ class ThreeDsnet(nn.Module):
             content_0 = self.content_encoder_0(data0)
             content_1 = self.content_encoder_1(data1)
 
-            style_0_prime = self.style_encoder(data0)
-            style_1_prime = self.style_encoder(data1)
+            style_0_prime = self.style_encoder_0(data0)
+            style_1_prime = self.style_encoder_1(data1)
 
             # Decode latent codes (within domain)
             out_00 = (self.decoder_0(content_0, style_0_prime, train=train)['points_3']).transpose(2, 3).contiguous()
             out_00 = out_00.view(out_00.size(0), -1, 3)
-            out_11 = (self.decoder_0(content_1, style_1_prime, train=train)['points_3']).transpose(2, 3).contiguous()
+            out_11 = (self.decoder_1(content_1, style_1_prime, train=train)['points_3']).transpose(2, 3).contiguous()
             out_11 = out_11.view(out_11.size(0), -1, 3)
             # Decode latent codes (cross domain)
-            out_01 = (self.decoder_0(content_0, style_1_prime, train=train)['points_3']).transpose(2, 3).contiguous()
+            out_01 = (self.decoder_1(content_0, style_1_prime, train=train)['points_3']).transpose(2, 3).contiguous()
             out_01 = out_01.view(out_01.size(0), -1, 3)
             out_10 = (self.decoder_0(content_1, style_0_prime, train=train)['points_3']).transpose(2, 3).contiguous()
             out_10 = out_10.view(out_10.size(0), -1, 3)
 
             return {'00' : out_00, '11' : out_11, '01' : out_01, '10' : out_10}
-            
