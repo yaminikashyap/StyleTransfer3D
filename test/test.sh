@@ -1,6 +1,5 @@
-DATA_DIR="/mnt/nfs/work1/mccallum/jbshah/3dsnet/dataset/data"
-#DATA_DIR="/mnt/nfs/scratch1/nikhilagarwa/3dsnet/dataset/data/"
-RESULTS_DIR="/mnt/nfs/work1/mccallum/jbshah/3dsnet/dataset/data/best_results/chair"
+DATA_DIR=""
+RESULTS_DIR=""
 GENERATOR_NORM="bn"
 DISCRIMINATOR_NORM="bn"
 NUM_LAYERS=2
@@ -32,3 +31,6 @@ python test.py \
 --generator_lrate=$GEN_LR \
 --discriminator_lrate=$DIS_LR \
 --best_results=$RESULTS_DIR \
+--class_0_file="/input/wine_bottle.points.ply.npy" \
+--class_1_file="/input/jug.points.ply.npy" \
+--model_path="./model160.pt"
