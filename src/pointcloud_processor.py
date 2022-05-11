@@ -1,17 +1,6 @@
 import numpy as np
 import torch
 
-
-"""
-Author : Thibault Groueix 01.09.2019
-
-Standards :
--- For batch processing. If you have a 2D tensor, it will unsqueeze it first
--- Support in place and out of place
--- Support inversion of applied transformation
-"""
-
-
 class FunctionGenerator(object):
     def invert(self):
         print("This function has to be reimplemented in every inherited class")

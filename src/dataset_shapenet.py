@@ -15,13 +15,6 @@ import pointcloud_processor as pointcloud_processor
 from copy import deepcopy
 
 class ShapeNet(data.Dataset):
-    """
-    Shapenet Dataloader
-    Uses Shapenet V1
-    Make sure to respect shapenet Licence.
-    Author : Thibault Groueix 01.11.2019
-    """
-
     def __init__(self, opt, category, subcategory, svr=False, train=True):
         self.opt = opt
         self.num_sample = opt.number_points if train else 2500

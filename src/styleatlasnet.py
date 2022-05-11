@@ -1,8 +1,3 @@
-"""
-Copyright (c) 2021, Mattia Segu
-Licensed under the MIT License (see LICENSE for details)
-"""
-
 import pymesh
 import torch
 import torch.nn as nn

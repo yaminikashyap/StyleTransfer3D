@@ -64,7 +64,7 @@ def calculate_losses(batch_losses, outputs, loss_params, data_0, data_1, batch_s
     adversarial_loss = nn.BCELoss()
     mse_loss = nn.MSELoss()
     reconstruction_loss = l1_distance
-    chamfer_loss = chamfer_dist_no_sampling
+    chamfer_loss = chamfer_dist
 
     #if not train:
     #    print(outputs)

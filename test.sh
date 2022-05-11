@@ -15,11 +15,11 @@ GEN_LR=0.001
 DIS_LR=0.004
 NEPOCH=180
 
-python test.py \
+python -u src/test.py \
 --data_dir=$DATA_DIR \
---family "chair" \
---class_0 "armchair" \
---class_1 "straight chair,side chair" \
+--family "" \
+--class_0 "" \
+--class_1 "" \
 --batch_size=$BATCH_SIZE \
 --weight_chamfer=$W_CHAMFER \
 --weight_cycle_chamfer=$W_CYCLE_CHAMFER \
@@ -31,6 +31,6 @@ python test.py \
 --generator_lrate=$GEN_LR \
 --discriminator_lrate=$DIS_LR \
 --best_results=$RESULTS_DIR \
---class_0_file="/input/wine_bottle.points.ply.npy" \
---class_1_file="/input/jug.points.ply.npy" \
---model_path="./model160.pt"
+--class_0_file="dataset/test/inputs/wine_bottle.points.ply.npy" \
+--class_1_file="dataset/test/inputs/jug.points.ply.npy" \
+--model_path="models/model460.pt"

@@ -1,6 +1,5 @@
-DATA_DIR="/gypsum/scratch1/nikhilagarwa/3dsnet/dataset/data"
-#DATA_DIR="/mnt/nfs/scratch1/nikhilagarwa/3dsnet/dataset/data/"
-RESULTS_DIR="/gypsum/scratch1/nikhilagarwa/3dsnet/dataset/data/best_results/chair"
+DATA_DIR=""
+RESULTS_DIR=""
 GENERATOR_NORM="bn"
 DISCRIMINATOR_NORM="bn"
 NUM_LAYERS=2
@@ -16,7 +15,7 @@ GEN_LR=0.001
 DIS_LR=0.004
 NEPOCH=180
 
-python train.py \
+python -u src/train.py \
 --data_dir=$DATA_DIR \
 --family "chair" \
 --class_0 "armchair" \

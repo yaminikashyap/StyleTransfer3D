@@ -5,7 +5,7 @@ import pyvista as pv
 import sys
 
 path = sys.argv[1]
-points = (np.load( path + ".npy")[0])
+points = (np.load( path))
 point_cloud = pv.PolyData(points)
 
 # np.allclose(points, point_cloud.points)

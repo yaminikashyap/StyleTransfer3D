@@ -56,10 +56,10 @@ def test_model(model, class_0_file, class_1_file):
             out_01[start:end, :] = outputs["01"]
             out_10[start:end, :] = outputs["10"]
 
-        np.save("./output00.npy", out_00)
-        np.save("./output11.npy", out_11)
-        np.save("./output01.npy", out_01)
-        np.save("./output10.npy", out_10)
+        np.save("./outputs/output00.npy", out_00)
+        np.save("./outputs/output11.npy", out_11)
+        np.save("./outputs/output01.npy", out_01)
+        np.save("./outputs/output10.npy", out_10)
 
     return 
 
